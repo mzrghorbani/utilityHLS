@@ -1,14 +1,14 @@
-#ifndef __TEST__
-#define __TEST__
+#ifndef __BOX__
+#define __BOX__
 
-class test {
+class box {
 private:
     int x;
     float y;
 
 public:
-    test();
-    virtual ~test();
+    box();
+    ~box();
     void setX(int x);
     int getX() const;
     void setY(float y);
