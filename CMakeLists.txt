@@ -3,4 +3,4 @@ project(utilityHLS)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(utilityHLS main.cpp test.cpp test.h utilityHLS.h)
+add_executable(utilityHLS main.cpp box.h box.cpp utilityHLS.h)
