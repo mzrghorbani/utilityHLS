@@ -6,20 +6,74 @@
 #define __UTILITYHLS__
 
 template<typename T>
-struct less {
+const T& minHLS(const T& a, const T& b) {
+    if (b < a)
+        return b;
+    return a;
+}
+
+template<typename T>
+const T& maxHLS(const T& a, const T& b) {
+    if (b > a)
+        return b;
+    return a;
+}
+
+template<typename T>
+struct lessHLS {
     bool operator()(const T &x, const T &y) const { return x < y; }
 };
 
 template<typename T>
-struct remove_reference {
+struct remove_referenceHLS {
     typedef T type;
 };
 
 template<typename T>
-T &&forward(typename remove_reference<T>::type &a) { return static_cast<T &&>( a ); }
+struct remove_referenceHLS<T&> {
+    typedef T type;
+};
 
 template<typename T>
-T &&move(T &&t) { return static_cast<typename remove_reference<T>::type &&>( t ); }
+struct remove_referenceHLS<T&&> {
+    typedef T type;
+};
+
+template<typename T>
+T &&forwardHLS(typename remove_referenceHLS<T>::type &a) { return static_cast<T &&>(a); }
+
+template<class InputIt, class T>
+InputIt findHLS(InputIt first, InputIt last, const T& value) {
+    for (; first != last; ++first) {
+        if (*first == value) {
+            return first;
+        }
+    }
+    return last;
+}
+
+template <typename T>
+typename remove_referenceHLS<T>::type&& moveHLS(T&& arg) {
+    return static_cast<typename remove_referenceHLS<T>::type&&>(arg);
+}
+
+template<class InputIt, class OutputIt>
+OutputIt moveHLS(InputIt first, InputIt last, OutputIt d_first) {
+    while (first != last) {
+        *d_first++ = moveHLS(*first++);
+    }
+    return d_first;
+}
+
+template< class ForwardIt, class T >
+ForwardIt removeHLS(ForwardIt first, ForwardIt last, const T& value) {
+    first = findHLS(first, last, value);
+    if (first != last)
+        for(ForwardIt i = first; ++i != last; )
+            if (!(*i == value))
+                *first++ = moveHLS(*i);
+    return first;
+}
 
 // pairHLS class
 template<typename T1, typename T2>
@@ -36,7 +90,7 @@ public:
     pairHLS(const pairHLS<U1, U2> &p) : first(p.first), second(p.second) {}
 
     template<typename U1>
-    pairHLS(U1 &&x, const T2 &y) : first(forward<U1>(x)), second(y) {}
+    pairHLS(U1 &&x, const T2 &y) : first(forwardHLS<U1>(x)), second(y) {}
 
     pairHLS &operator=(const pairHLS &p) {
         first = p.first;
@@ -53,9 +107,14 @@ public:
 
     template<typename _U1, typename _Arg0, typename... _Args>
     pairHLS(_U1 &&__x, _Arg0 &&__arg0, _Args &&... __args) :
-            first(forward<_U1>(__x)), second(forward<_Arg0>(__arg0), forward<_Args>(__args)...) {}
+            first(forwardHLS<_U1>(__x)), second(forwardHLS<_Arg0>(__arg0), forwardHLS<_Args>(__args)...) {}
 
 };
+
+template<typename T1, typename T2>
+inline bool operator==(pairHLS<T1, T2> x, pairHLS<T1, T2> y) {
+    return x.first == y.first && x.second == y.second;
+}
 
 template<typename T1, typename T2>
 inline bool operator==(const pairHLS<T1, T2> &x, const pairHLS<T1, T2> &y) {
@@ -77,54 +136,81 @@ inline pairHLS<T1, T2> make_pairHLS(T1 x, T2 y) {
     return pairHLS<T1, T2>(x, y);
 }
 
+
 // arrayHLS class
 template<typename T>
 class arrayHLS {
+public:
+    typedef T value_type;
+    typedef value_type *iterator;
+    typedef const value_type *const_iterator;
+
 private:
     unsigned int size_;
     T data_[10];
 
 public:
-//    friend std::ostream &operator<<(std::ostream &os, const arrayHLS &other) {
-//        os << other.size_ << " | ";
-//        for (int i = 0; i < other.size_; i++) {
-//            os << other[i] << ",";
-//        }
-//        return os;
-//    }
-
     arrayHLS() : size_(0), data_{} {}
-
-    arrayHLS(const arrayHLS &val) {
-        size_ = val.size_;
-        for (unsigned int i = 0; i < size_; i++) {
-            data_[i] = val.data_[i];
-        }
-    }
-
 
     ~arrayHLS() {}
 
-    void push_back(const T &val) {
+    arrayHLS(unsigned int i) : size_(0), data_{} {}
+
+    void push_back(const value_type& val) {
         data_[size_] = val;
         size_++;
     }
 
-    arrayHLS &operator=(const arrayHLS &rhs) {
-        if (this != &rhs) {
+    arrayHLS& operator=(const arrayHLS& rhs) {
+        if(this != &rhs) {
             size_ = rhs.size_;
-            for (unsigned int i = 0; i < size_; i++) {
+            for(unsigned int i=0; i<size_; ++i) {
                 data_[i] = rhs.data_[i];
             }
         }
         return *this;
     }
 
-    T &operator[](unsigned int i) {
+    void erase(const value_type& val) {
+        for(iterator itr1=begin(); itr1!=end(); ++itr1)
+            if(*itr1 == val)
+                for(iterator itr2=itr1; itr2!=end(); ++itr2)
+                    *itr2 = *(itr2+1);
+        size_--;
+    }
+
+    iterator erase(iterator pos) {
+        for(iterator itr1=begin(); itr1!=end(); ++itr1) {
+            if (itr1 == pos) {
+                for (iterator itr2 = pos; itr2 != end(); ++itr2)
+                    *itr2 = *(itr2 + 1);
+            }
+        }
+        size_--;
+        return &data_[0];
+    }
+
+    iterator erase(iterator pos1, iterator pos2) {
+        unsigned int count = 0;
+        for(iterator itr1=begin(); itr1!=end(); ++itr1) {
+            if(itr1 == pos1) {
+                count = 1;
+                for(iterator itr2=itr1; itr2!=pos2; ++itr2) {
+                    count++;
+                }
+            }
+        }
+        for(int i=1; i<count; ++i) {
+            erase(pos1);
+        }
+        return &data_[0];
+    }
+
+    value_type& operator[](unsigned int i) {
         return data_[i];
     }
 
-    const T &operator[](const unsigned int &i) const {
+    const value_type& operator[](const unsigned int& i) const {
         return data_[i];
     }
 
@@ -136,22 +222,25 @@ public:
         size_ = 0;
     }
 
-    T *begin() {
-        return data_;
+    bool empty() const {
+        return begin() == end();
     }
 
-    const T *begin() const {
-        return data_;
+    iterator begin() {
+        return &data_[0];
     }
 
-    T *end() {
-        return (data_ + size_);
+    const_iterator begin() const {
+        return &data_[0];
     }
 
-    const T *end() const {
-        return (data_ + size_);
+    iterator end() {
+        return (&data_[0] + size_);
     }
 
+    const_iterator end() const {
+        return (&data_[0] + size_);
+    }
 };
 
 // mapHLS class
@@ -165,7 +254,7 @@ public:
     typedef value_type *iterator;
     typedef const value_type *const_iterator;
 
-private:
+public:
     key_type size_;
     value_type data_[30];
 
@@ -206,7 +295,7 @@ public:
 
     bool hasKey(const key_type &_key) {
         const_iterator itr;
-        for (itr = cbegin(); itr != cend(); ++itr) {
+        for (itr = begin(); itr != end(); ++itr) {
             if (itr->first == _key) {
                 return true;
             }
@@ -228,10 +317,11 @@ public:
     }
 
     void sort() {
-        unsigned int i, j, temp;
-        for(i=0;i<size_;i++) {
-            for(j=0;j<size_;j++) {
-                if(data_[i].first < data_[j].first) {
+        unsigned int i, j;
+        unsigned int temp;
+        for (i = 0; i < size_; i++) {
+            for (j = i + 1; j < size_; j++) {
+                if (data_[i].first > data_[j].first) {
                     temp = data_[i].first;
                     data_[i].first = data_[j].first;
                     data_[j].first = temp;
@@ -256,7 +346,7 @@ public:
         return &data_[0];
     }
 
-    const_iterator cbegin() const {
+    const_iterator begin() const {
         return &data_[0];
     }
 
@@ -264,7 +354,7 @@ public:
         return &data_[size_];
     }
 
-    const_iterator cend() const {
+    const_iterator end() const {
         return &data_[size_];
     }
 };
