@@ -38,6 +38,8 @@ int main() {
     // push back the object in vector v
     v.push_back(&v2);
 
+    removeHLS(v.begin(), v.end(), &v1);
+
     std::cout << '\n';
 
     std::cout << "box arrayHLS iterator" << std::endl;
@@ -103,7 +105,15 @@ int main() {
         std::cout << "key: " << c.first << '\t';
         std::cout << "Element: " << c.second[0] << std::endl;
     }
+
     std::cout << '\n';
+
+    std::cout << "Test moveHLS()" << std::endl;
+
+    int a = 7;
+    int b = 14;
+    swapHLS(a, b);
+    std::cout << "a: " << a << " b: " << b << std::endl;
 
     std::cout << "end of main function!!!" << std::endl;
     return 0;
