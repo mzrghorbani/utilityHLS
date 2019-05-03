@@ -6,23 +6,18 @@
 #define __UTILITYHLS__
 
 template<typename T>
-const T& minHLS(const T& a, const T& b) {
+inline const T &minHLS(const T &a, const T &b) {
     if (b < a)
         return b;
     return a;
 }
 
 template<typename T>
-const T& maxHLS(const T& a, const T& b) {
+inline const T &maxHLS(const T &a, const T &b) {
     if (b > a)
         return b;
     return a;
 }
-
-template<typename T>
-struct lessHLS {
-    bool operator()(const T &x, const T &y) const { return x < y; }
-};
 
 template<typename T>
 struct remove_referenceHLS {
@@ -30,36 +25,20 @@ struct remove_referenceHLS {
 };
 
 template<typename T>
-struct remove_referenceHLS<T&> {
+struct remove_referenceHLS<T &> {
     typedef T type;
 };
 
 template<typename T>
-struct remove_referenceHLS<T&&> {
+struct remove_referenceHLS<T &&> {
     typedef T type;
 };
 
 template<typename T>
 T &&forwardHLS(typename remove_referenceHLS<T>::type &a) { return static_cast<T &&>(a); }
 
-template <typename T>
-typename remove_referenceHLS<T>::type&& moveHLS(T&& arg) {
-    return static_cast<typename remove_referenceHLS<T>::type&&>(arg);
-}
-
-template< class ForwardIt, class T >
-ForwardIt removeHLS(ForwardIt first, ForwardIt last, const T& value)
-{
-    first = findHLS(first, last, value);
-    if (first != last)
-        for(ForwardIt i = first; ++i != last; )
-            if (!(*i == value))
-                *first++ = moveHLS(*i);
-    return first;
-}
-
 template<class InputIt, class T>
-InputIt findHLS(InputIt first, InputIt last, const T& value) {
+InputIt findHLS(InputIt first, InputIt last, const T &value) {
     for (; first != last; ++first) {
         if (*first == value) {
             return first;
@@ -68,11 +47,30 @@ InputIt findHLS(InputIt first, InputIt last, const T& value) {
     return last;
 }
 
-template <class T>
-void swapHLS(T& a, T& b) {
-    T tmp(moveHLS(a));
-    a = moveHLS(b);
-    b = moveHLS(tmp);
+template<typename T>
+typename remove_referenceHLS<T>::type &&moveHLS(T &&arg) {
+    return static_cast<typename remove_referenceHLS<T>::type &&>(arg);
+}
+
+template<class InputIt, class OutputIt>
+OutputIt moveHLS(InputIt first, InputIt last, OutputIt itr) {
+    while (first != last) {
+        *itr++ = moveHLS(*first++);
+    }
+    return itr;
+}
+
+template<class ForwardIterator, class T>
+ForwardIterator removeHLS(ForwardIterator first, ForwardIterator last, const T &value) {
+    ForwardIterator result = first;
+    while (first != last) {
+        if (!(*first == value)) {
+            *result = *first;
+            ++result;
+        }
+        ++first;
+    }
+    return result;
 }
 
 // pairHLS class
@@ -105,10 +103,9 @@ public:
         return *this;
     }
 
-    template<typename _U1, typename _Arg0, typename... _Args>
-    pairHLS(_U1 &&__x, _Arg0 &&__arg0, _Args &&... __args) :
-            first(forwardHLS<_U1>(__x)), second(forwardHLS<_Arg0>(__arg0), forwardHLS<_Args>(__args)...) {}
-
+    template<typename U1, typename Arg0, typename... Args>
+    pairHLS(U1 &&x, Arg0 &&arg0, Args &&... args) :
+            first(forwardHLS<U1>(x)), second(forwardHLS<Arg0>(arg0), forwardHLS<Args>(args)...) {}
 };
 
 template<typename T1, typename T2>
@@ -146,75 +143,80 @@ private:
 
 public:
     arrayHLS() : size_(0) {
-        for(unsigned int i=0; i<9; ++i) {
+        unsigned int i = 0;
+        for (i = 0; i < size_; ++i) {
             data_[i] = 0;
         }
     }
 
     ~arrayHLS() {}
 
-    arrayHLS(unsigned int val) : size_(0) {
-        for(unsigned int i=0; i<9; ++i) {
+    arrayHLS(unsigned int value) : size_(value) {
+        unsigned int i = 0;
+        for (i = 0; i < size_; ++i) {
             data_[i] = 0;
         }
     }
 
-    void push_back(const value_type& val) {
-        data_[size_] = val;
+    void push_back(const value_type &value) {
+        data_[size_] = value;
         size_++;
     }
 
-    arrayHLS& operator=(const arrayHLS& rhs) {
-        if(this != &rhs) {
+    arrayHLS &operator=(const arrayHLS &rhs) {
+        if (this != &rhs) {
             size_ = rhs.size_;
-            for(unsigned int i=0; i<size_; ++i) {
+            for (unsigned int i = 0; i < size_; ++i) {
                 data_[i] = rhs.data_[i];
             }
         }
         return *this;
     }
 
-    void erase(const value_type& val) {
-        for(iterator itr1=begin(); itr1!=end(); ++itr1)
-            if(*itr1 == val)
-                for(iterator itr2=itr1; itr2!=end(); ++itr2)
-                    *itr2 = *(itr2+1);
-        size_--;
-    }
-
-    iterator erase(iterator pos) {
-        for(iterator itr1=begin(); itr1!=end(); ++itr1) {
-            if (itr1 == pos) {
-                for (iterator itr2 = pos; itr2 != end(); ++itr2)
+    void erase(const value_type &value) {
+        for (iterator itr1 = begin(); itr1 != end(); ++itr1) {
+            if (*itr1 == value) {
+                for (iterator itr2 = itr1; itr2 != end(); ++itr2) {
                     *itr2 = *(itr2 + 1);
+                }
             }
         }
         size_--;
-        return &data_[0];
     }
 
-    iterator erase(iterator pos1, iterator pos2) {
+    void erase(iterator pos) {
+        for (iterator itr1 = begin(); itr1 != end(); ++itr1) {
+            if (itr1 == pos) {
+                for (iterator itr2 = itr1; itr2 != end(); ++itr2) {
+                    *itr2 = *(itr2 + 1);
+                }
+            }
+        }
+        size_--;
+    }
+
+    void erase(iterator pos1, iterator pos2) {
         unsigned int count = 0;
-        for(iterator itr1=begin(); itr1!=end(); ++itr1) {
-            if(itr1 == pos1) {
+        for (iterator itr1 = begin(); itr1 != end(); ++itr1) {
+            if (itr1 == pos1) {
                 count = 1;
-                for(iterator itr2=itr1; itr2!=pos2; ++itr2) {
+                for (iterator itr2 = itr1; itr2 != pos2; ++itr2) {
                     count++;
                 }
             }
         }
-        for(unsigned int i=1; i<count; ++i) {
+        for (int i = 1; i < count; ++i) {
             erase(pos1);
         }
-        return &data_[0];
     }
 
-    value_type& operator[](unsigned int i) {
-        return data_[i];
+
+    value_type &operator[](unsigned int idx) {
+        return data_[idx];
     }
 
-    const value_type& operator[](const unsigned int& i) const {
-        return data_[i];
+    const value_type &operator[](const unsigned int &idx) const {
+        return data_[idx];
     }
 
     unsigned int size() const {
@@ -223,6 +225,10 @@ public:
 
     void clear() {
         size_ = 0;
+    }
+
+    bool empty() const {
+        return begin() == end();
     }
 
     iterator begin() {
@@ -234,13 +240,13 @@ public:
     }
 
     iterator end() {
-        return (&data_[0] + size_);
+        return &data_[size_];
     }
 
+//    (&data_[0] + size_)
     const_iterator end() const {
-        return (&data_[0] + size_);
+        return &data_[size_];
     }
-
 };
 
 // mapHLS class
@@ -259,60 +265,81 @@ public:
     value_type data_[30];
 
 public:
-    mapHLS() : size_(0), data_{} {}
-
-    ~mapHLS() {}
-
-    mapHLS(const mty &rhs) : size_(rhs.size_), data_{} {
-        int count = 0;
-        for (iterator i = &rhs.data_[0]; i != &rhs.data_[rhs.size_]; ++i, ++count) {
-            &data_[count] = *i;
-        }
-    }
-
-    mapHLS &operator=(const value_type &rhs) {
-        int count = 0;
-        for (iterator i = &rhs.data_[0]; i != &rhs.data_[rhs.size_]; ++i, ++count) {
-            data_[count] = i;
-        }
-    }
-
-    mty &push_back(const value_type &val) {
-        data_[size_].first = val.first;
-        data_[size_].second = val.second;
-        size_++;
-        return *this;
-    }
-
-    void erase(const key_type &i) {
-        iterator itr;
-        for (itr = begin(); itr != end(); ++itr) {
-            if (itr->first == i) {
-                itr->first = 0;
+    mapHLS() : size_(0) {
+        unsigned int i = 0;
+        unsigned int j = 0;
+        for (i = 0; i < 30; ++i) {
+            data_[i].first = 0;
+            for (j = 0; j < 10; ++j) {
+                data_[j].second = 0;
             }
         }
     }
 
-    bool hasKey(const key_type &_key) {
+    ~mapHLS() {
+        unsigned int i = 0;
+        unsigned int j = 0;
+        if (!empty()) {
+            for (i = 0; i < size_; ++i) {
+                data_[i].first = 0;
+                for (j = 0; j < 10; ++j) {
+                    data_[j].second = 0;
+                }
+            }
+        }
+    }
+
+    mapHLS(const mty &rhs) : size_(rhs.size_) {
+        unsigned int count = 0;
+        for (iterator itr = &rhs.data_[0]; itr != &rhs.data_[rhs.size_]; ++itr, ++count) {
+            &data_[count] = *itr;
+        }
+    }
+
+    mapHLS &operator=(const value_type &rhs) {
+        unsigned int count = 0;
+        for (iterator itr = &rhs.data_[0]; itr != &rhs.data_[rhs.size_]; ++itr, ++count) {
+            data_[count] = itr;
+        }
+    }
+
+    mty &push_back(const value_type &value) {
+        data_[size_].first = value.first;
+        data_[size_].second = value.second;
+        size_++;
+        return *this;
+    }
+
+    void erase(const key_type &idx) {
+        iterator itr;
+        for (itr = begin(); itr != end(); ++itr) {
+            if (itr->first == idx) {
+                itr->first = 0;
+                itr->second = 0;
+            }
+        }
+    }
+
+    bool hasKey(const key_type &idx) {
         const_iterator itr;
-        for (itr = cbegin(); itr != cend(); ++itr) {
-            if (itr->first == _key) {
+        for (itr = begin(); itr != end(); ++itr) {
+            if (itr->first == idx) {
                 return true;
             }
         }
         return false;
     }
 
-    mapped_type &operator[](const key_type &_Key) {
-        if (hasKey(_Key)) {
+    mapped_type &operator[](const key_type &idx) {
+        if (hasKey(idx)) {
             for (iterator i = begin(); i != end(); ++i) {
-                if (i->first == _Key) {
+                if (i->first == idx) {
                     return i->second;
                 }
             }
         }
         unsigned int op = size_;
-        push_back(value_type(_Key, mapped_type()));
+        push_back(value_type(idx, mapped_type()));
         return data_[op].second;
     }
 
@@ -321,7 +348,7 @@ public:
         unsigned int temp;
         for (i = 0; i < size_; i++) {
             for (j = i + 1; j < size_; j++) {
-                if (data_[i].first > data_[j].first + 1) {
+                if (data_[i].first > data_[j].first) {
                     temp = data_[i].first;
                     data_[i].first = data_[j].first;
                     data_[j].first = temp;
@@ -335,7 +362,7 @@ public:
     }
 
     bool empty() const {
-        return size_ == 0;
+        return begin() == end();
     }
 
     void clear() {
@@ -346,7 +373,7 @@ public:
         return &data_[0];
     }
 
-    const_iterator cbegin() const {
+    const_iterator begin() const {
         return &data_[0];
     }
 
@@ -354,7 +381,7 @@ public:
         return &data_[size_];
     }
 
-    const_iterator cend() const {
+    const_iterator end() const {
         return &data_[size_];
     }
 };

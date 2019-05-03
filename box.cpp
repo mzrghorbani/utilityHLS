@@ -22,3 +22,8 @@ int box::getX() const {
 float box::getY() const {
     return y;
 }
+
+box::box(const box &b) {
+    box::x = b.x;
+    box::y = b.y;
+}

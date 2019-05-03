@@ -8,6 +8,7 @@ private:
 
 public:
     box();
+    box(const box &b);
     ~box();
     void setX(int x);
     int getX() const;
