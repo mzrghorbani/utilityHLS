@@ -149,7 +149,12 @@ public:
         }
     }
 
-    ~arrayHLS() {}
+    ~arrayHLS() {
+        unsigned int i = 0;
+        for (i = 0; i < size_; ++i) {
+            data_[i] = 0;
+        }
+    }
 
     arrayHLS(unsigned int value) : size_(value) {
         unsigned int i = 0;
@@ -197,19 +202,10 @@ public:
 
     void erase(iterator pos1, iterator pos2) {
         unsigned int count = 0;
-        for (iterator itr1 = begin(); itr1 != end(); ++itr1) {
-            if (itr1 == pos1) {
-                count = 1;
-                for (iterator itr2 = itr1; itr2 != pos2; ++itr2) {
-                    count++;
-                }
-            }
-        }
-        for (int i = 1; i < count; ++i) {
+        for (iterator itr1 = pos1; itr1 != pos2; ++itr1) {
             erase(pos1);
         }
     }
-
 
     value_type &operator[](unsigned int idx) {
         return data_[idx];
@@ -320,7 +316,7 @@ public:
         }
     }
 
-    bool hasKey(const key_type &idx) {
+    bool hasKey(const key_type &idx) const {
         const_iterator itr;
         for (itr = begin(); itr != end(); ++itr) {
             if (itr->first == idx) {
@@ -331,11 +327,9 @@ public:
     }
 
     mapped_type &operator[](const key_type &idx) {
-        if (hasKey(idx)) {
-            for (iterator i = begin(); i != end(); ++i) {
-                if (i->first == idx) {
-                    return i->second;
-                }
+        for (iterator itr = begin(); itr != end(); ++itr) {
+            if (itr->first == idx) {
+                return itr->second;
             }
         }
         unsigned int op = size_;
